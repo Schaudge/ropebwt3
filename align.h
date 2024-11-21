@@ -6,6 +6,7 @@
 #define RB3_SWF_E2E      0x1
 #define RB3_SWF_HAPDIV   0x2
 #define RB3_SWF_KEEP_RS  0x4
+#define RB3_RH_WRITE_ALL   0x16
 
 typedef struct {
 	uint32_t flag;
@@ -27,7 +28,8 @@ typedef struct {
 	uint8_t *rseq; // reference sequence in the alignment
 	uint32_t *cigar; // cigar in the BAM encoding
 	int32_t *qoff; // list of query offsets for the same hit
-	char *cs;
+	char *cs; // different sequence for alignment
+    char *rhs; // all ref hit names/ids
 } rb3_swhit_t;
 
 typedef struct {

@@ -182,7 +182,7 @@ int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_
 			aux.n_sa++;
 			if (aux.n_sa == aux.max_sa) goto end_ssa_multi;
 		}
-		for (c = 1; c < 6; ++c)
+		for (c = 1; c < RB3_ASIZE; ++c)
 			if (ok[c] < ol[c])
 				ssa_add_intv(ssa, &aux, f->acc[c] + ok[c], f->acc[c] + ol[c], x.off + 1);
 	}
