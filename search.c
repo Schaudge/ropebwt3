@@ -431,7 +431,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 		else if (c == 'k') opt.swo.end_len = atoi(o.arg);
 		else if (c == 'j') opt.swo.min_mem_len = atoi(o.arg);
 		else if (c == 'e') opt.swo.flag |= RB3_SWF_E2E, opt.swo.end_len = 1;
-        else if (c == 'x') opt.swo.flag |= RB3_RH_WRITE_ALL;
+		else if (c == 'x') opt.swo.flag |= RB3_RH_WRITE_ALL;
 		else if (c == 'y') opt.swo.e2e_drop = atoi(o.arg);
 		else if (c == 'u') opt.flag |= RB3_MF_WRITE_UNMAP;
 		else if (c == 301) no_ssa = 1;
@@ -484,7 +484,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 		}
 		if (strcmp(argv[0], "sw") == 0 || strcmp(argv[0], "hapdiv") == 0 || strcmp(argv[0], "search") == 0) {
 			fprintf(stderr, "  -N INT      keep up to INT hits per DAWG node [%d]\n", opt.swo.n_best);
-			fprintf(stderr, "  -m INT      min alignment score [%d]\n", opt.swo.min_sc);
+			fprintf(stderr, "  -m INT      min INT%% alignment score percentage of perfect match score [%d]\n", opt.swo.min_sc);
 			fprintf(stderr, "  -A INT      match score [%d]\n", opt.swo.match);
 			fprintf(stderr, "  -B INT      mismatch penalty [%d]\n", opt.swo.mis);
 			fprintf(stderr, "  -O INT      gap open penalty [%d]\n", opt.swo.gap_open);
