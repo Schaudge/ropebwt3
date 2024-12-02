@@ -28,6 +28,7 @@ typedef struct {
 	uint8_t *rseq; // reference sequence in the alignment
 	uint32_t *cigar; // cigar in the BAM encoding
 	int32_t *qoff; // list of query offsets for the same hit
+    uint32_t *rhc; // all ref hit counts (respect to rhs)
 	char *cs; // different sequence for alignment
     char *rhs; // all ref hit names/ids
 } rb3_swhit_t;

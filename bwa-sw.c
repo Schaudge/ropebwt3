@@ -195,29 +195,36 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 	// get reference name/id and position for these hits in the SA interval
 	hit->pos = hit->sid = -1;
 	if (f->ssa) {
-		rb3_pos_t pos;
-		rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, 1, &pos);
-		hit->pos = pos.pos, hit->sid = pos.sid;    // the first hit
+		rb3_pos_t gpos;
+		rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, 1, &gpos);
+		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
         if (opt->flag & RB3_RH_WRITE_ALL) {  // record all ref hits, add by Schaudge King!
             kstring_t out = {0,0,0};
             uint32_t max_char_size = (hit->hi - hit->lo) * 16 + 1;  // max accession size + one comma = 16
             hit->rhs = RB3_CALLOC(char, max_char_size);
             out.m = max_char_size, out.s = hit->rhs;
-            int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[pos.sid>>1]);
+            int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
+            hit->rhc = RB3_CALLOC(uint32_t, hit->hi - hit->lo + 1);
+            hit->rhc[0] = 1;
             int64_t idx = hit->lo, max_hits = hit->lo + 5001;  // at most 5000 hits
             for (; idx < hit->hi - 1 && idx < max_hits; ++idx) {
-                rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &pos);
+                rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &gpos);
                 // the following codes are useful to trim the duplicated taxonomy id
-                uint32_t find = 0, sid_len = strlen(f->sid->name[pos.sid>>1]);
-                uint32_t ii = 0, jj = 1;
+                uint32_t find = 0, sid_len = strlen(f->sid->name[gpos.sid>>1]);
+                uint32_t ii = 0, jj = 1, ci = 0;
                 for (; find < 1 && jj < space_used; ++jj)
                     if (*(hit->rhs + jj) == ',') {
-                        if (ii + sid_len == jj && strncmp(f->sid->name[pos.sid>>1], hit->rhs + ii, sid_len) == 0)
+                        if (ii + sid_len == jj && strncmp(f->sid->name[gpos.sid>>1], hit->rhs + ii, sid_len) == 0) {
+                            hit->rhc[ci] += 1;
                             find = 1;
+                        }
+                        ++ci;
                         ii = ++jj;
                     }
-                if (!find)
-                    space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[pos.sid>>1]);
+                if (!find) {
+                    space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
+                    hit->rhc[ci] = 1;
+                }
             }
         }
 	}
@@ -590,7 +597,7 @@ void rb3_swrst_free(rb3_swrst_t *rst)
 {
 	int32_t i;
 	for (i = 0; i < rst->n; ++i) {
-		free(rst->a[i].rseq); free(rst->a[i].cigar); free(rst->a[i].cs); free(rst->a[i].rhs); free(rst->a[i].qoff);
+		free(rst->a[i].rseq); free(rst->a[i].cigar); free(rst->a[i].cs); free(rst->a[i].rhs); free(rst->a[i].qoff); free(rst->a[i].rhc);
 	}
 	free(rst->a);
 }

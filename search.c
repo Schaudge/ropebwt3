@@ -181,8 +181,12 @@ static void write_paf(kstring_t *out, const rb3_fmi_t *f, const rb3_swhit_t *h, 
 	for (k = 0; k < h->n_cigar; ++k)
 		rb3_sprintf_lite(out, "%d%c", h->cigar[k]>>4, "MIDNSHP=X"[h->cigar[k]&0xf]);
 	rb3_sprintf_lite(out, "\tcs:Z:%s", h->cs);
-    if (h->rhs) {
+    if (h->rhs && h->rhc) {
         rb3_sprintf_lite(out, "\ths:Z:%s", h->rhs);
+        rb3_sprintf_lite(out, "\thc:Z:");
+        int32_t ci = 0;
+        while (h->rhc[ci] > 0)
+            rb3_sprintf_lite(out, "%d,", h->rhc[ci++]);
     }
 	if (h->rseq) {
 		rb3_sprintf_lite(out, "\trs:Z:");
