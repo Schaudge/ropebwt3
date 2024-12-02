@@ -204,7 +204,8 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
             hit->rhs = RB3_CALLOC(char, max_char_size);
             out.m = max_char_size, out.s = hit->rhs;
             int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[pos.sid>>1]);
-            for (int64_t idx = hit->lo; idx < hit->hi - 1; ++idx) {
+            int64_t idx = hit->lo, max_hits = hit->lo + 5001;  // at most 5000 hits
+            for (; idx < hit->hi - 1 && idx < max_hits; ++idx) {
                 rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &pos);
                 // the following codes are useful to trim the duplicated taxonomy id
                 uint32_t find = 0, sid_len = strlen(f->sid->name[pos.sid>>1]);

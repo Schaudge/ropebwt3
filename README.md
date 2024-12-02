@@ -29,6 +29,9 @@ gzip -d human100.fmr.gz
 
 # Find C4 alleles (the query is on the exon 26 of C4A)
 echo CCAGGACCCCTGTCCAGTGTTAGACAGGAGCATGCAG | ./ropebwt3 sw -eN200 -Lm10 human100.fmd -
+
+# Get all top score alignments in Core nucleotide BLAST database (core_nt) for metagenomic sequencing
+./ropebwt3 sw -eN200 -m88 -t16 -K10m -x core_nt.fmd ***.fastq
 ```
 
 ## Table of Contents
