@@ -18,7 +18,7 @@ void rb3_swopt_init(rb3_swopt_t *opt)
 {
 	memset(opt, 0, sizeof(*opt));
 	opt->n_best = 25;
-	opt->min_sc = 90;
+	opt->min_sc = 88;
 	opt->match = 1, opt->mis = 2;
 	opt->gap_open = 4, opt->gap_ext = 3;
 	opt->end_len = 11;
