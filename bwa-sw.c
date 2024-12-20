@@ -201,32 +201,39 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
 		if (opt->flag & RB3_RH_WRITE_ALL) {  // record all ref hits, add by Schaudge King!
 			kstring_t out = {0,0,0};
-			int64_t max_hits = hit->lo + opt->max_hc > hit->hi ? hit->hi - hit->lo : opt->max_hc;
-			hit->rhs = RB3_CALLOC(char, max_hits * 16 + 1);  // max accession size + one comma = 16
-			out.m = max_hits * 16 + 1, out.s = hit->rhs;
-			int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
-			hit->rhc = RB3_CALLOC(uint32_t, max_hits + 1);
-			hit->rhc[0] = 1;
-			int64_t idx = hit->lo, idx_top = hit->lo + max_hits - 1;
-			for (; idx < idx_top; ++idx) {
-				rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &gpos);
-				// the following codes are useful to trim the duplicated taxonomy id
-				uint32_t find = 0, sid_len = strlen(f->sid->name[gpos.sid>>1]);
-				uint32_t ii = 0, jj = 1, ci = 0;
-				for (; find < 1 && jj < space_used; ++jj)
-				    if (*(hit->rhs + jj) == ',') {
-				        if (ii + sid_len == jj && strncmp(f->sid->name[gpos.sid>>1], hit->rhs + ii, sid_len) == 0) {
-				            hit->rhc[ci] += 1;
-				            find = 1;
-				        }
-				        ++ci;
-				        ii = ++jj;
-				    }
-				if (!find) {
-				    space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
-				    hit->rhc[ci] = 1;
-				}
-			}
+            if (hit->lo + opt->max_hc < hit->hi) {  // set taxonomy id, hit count to 0, opt->max_hc + 1 respectively for high homology read
+                hit->rhs = RB3_CALLOC(char, 2);
+                hit->rhs[0] = '0';
+                hit->rhc = RB3_CALLOC(uint32_t, 2);
+                hit->rhc[0] = opt->max_hc + 1;
+            } else {
+                int64_t max_hits = hit->hi - hit->lo;
+                hit->rhs = RB3_CALLOC(char, max_hits * 16 + 1);  // max accession size + one comma = 16
+                out.m = max_hits * 16 + 1, out.s = hit->rhs;
+                int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
+                hit->rhc = RB3_CALLOC(uint32_t, max_hits + 1);
+                hit->rhc[0] = 1;
+                int64_t idx = hit->lo;
+                for (; idx < hit->hi - 1; ++idx) {
+                    rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &gpos);
+                    // the following codes are useful to trim the duplicated taxonomy id
+                    uint32_t find = 0, sid_len = strlen(f->sid->name[gpos.sid>>1]);
+                    uint32_t ii = 0, jj = 1, ci = 0;
+                    for (; find < 1 && jj < space_used; ++jj)
+                        if (*(hit->rhs + jj) == ',') {
+                            if (ii + sid_len == jj && strncmp(f->sid->name[gpos.sid>>1], hit->rhs + ii, sid_len) == 0) {
+                                hit->rhc[ci] += 1;
+                                find = 1;
+                            }
+                            ++ci;
+                            ii = ++jj;
+                        }
+                    if (!find) {
+                        space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
+                        hit->rhc[ci] = 1;
+                    }
+                }
+            }
 		}
 	}
 }
