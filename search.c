@@ -187,13 +187,16 @@ static void write_paf(kstring_t *out, const rb3_fmi_t *f, const rb3_swhit_t *h, 
         int32_t ci = 0;
         while (h->rhc[ci] > 0)
             rb3_sprintf_lite(out, "%d,", h->rhc[ci++]);
+        rb3_sprintf_lite(out, "\tqs:Z:");
+        for (k = 0; k < s->len; ++k)
+            rb3_sprintf_lite(out, "%c", "$ACGTN"[s->seq[k]]);
     }
-	if (h->rseq) {
-		rb3_sprintf_lite(out, "\trs:Z:");
-		for (k = 0; k < h->rlen; ++k)
-			rb3_sprintf_lite(out, "%c", "$ACGTN"[h->rseq[k]]);
-	}
-	rb3_sprintf_lite(out, "\n");
+    if (h->rseq) {
+        rb3_sprintf_lite(out, "\trs:Z:");
+        for (k = 0; k < h->rlen; ++k)
+            rb3_sprintf_lite(out, "%c", "$ACGTN"[h->rseq[k]]);
+    }
+    rb3_sprintf_lite(out, "\n");
 }
 
 static void write_all_hits(kstring_t *out, const m_seq_t *s, const rb3_swrst_t *r)
@@ -217,7 +220,6 @@ static void write_per_seq(step_t *t)
 	kstring_t out = {0,0,0};
 	for (j = 0; j < t->n_seq; ++j) {
 		m_seq_t *s = &t->seq[j];
-		free(s->seq);
 		out.l = 0;
 		if (p->opt->algo == RB3_SA_SW && (p->opt->flag & RB3_MF_WRITE_ALL)) { // write all hits in a compact format
 			write_all_hits(&out, s, &t->rst[j]);
@@ -232,7 +234,10 @@ static void write_per_seq(step_t *t)
 				}
 			} else if (p->opt->flag & RB3_MF_WRITE_UNMAP) { // unmapped
 				write_name(&out, s);
-				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0\n", s->len);
+				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0\tqs:Z:", s->len);
+                for (int32_t k = 0; k < s->len; ++k)
+                    rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                rb3_sprintf_lite(&out, "\n");
 				fputs(out.s, stdout);
 			}
 			rb3_swrst_free(r);
@@ -285,7 +290,7 @@ static void write_per_seq(step_t *t)
 				fputs(out.s, stdout);
 			}
 		}
-		free(s->name); free(s->mem); free(s->gap);
+		free(s->name); free(s->seq); free(s->gap); free(s->mem);
 	}
 	free(out.s);
 	free(t->rst);
@@ -436,7 +441,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 		else if (c == 'k') opt.swo.end_len = atoi(o.arg);
 		else if (c == 'j') opt.swo.min_mem_len = atoi(o.arg);
 		else if (c == 'e') opt.swo.flag |= RB3_SWF_E2E, opt.swo.end_len = 1;
-		else if (c == 'x') opt.swo.flag |= RB3_RH_WRITE_ALL;
+		else if (c == 'x') opt.swo.flag |= RB3_SWF_MAX_HIS;
 		else if (c == 'y') opt.swo.e2e_drop = atoi(o.arg);
 		else if (c == 'u') opt.flag |= RB3_MF_WRITE_UNMAP;
 		else if (c == 301) no_ssa = 1;
@@ -503,7 +508,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 			fprintf(stderr, "  -k INT      require INT-mer match at the end of alignment [%d]\n", opt.swo.end_len);
 			fprintf(stderr, "  -u          write unmapped queries to PAF\n");
 			fprintf(stderr, "  -q          max output INT hits of hs/hc field with option -x [%d]\n", opt.swo.max_hc);
-			fprintf(stderr, "  -x          write hit accessions name (taxonomy id) to the hs tag with comma delimited (force --seq)\n");
+			fprintf(stderr, "  -x          write max hits taxonomy id/accessions and count to hs, hc tag respectively with comma delimited\n");
 			fprintf(stderr, "  --seq       write reference sequence to the rs tag\n");
 			fprintf(stderr, "  --all-e2e   write all end-to-end hits in a compact format (forcing -e)\n");
 			fprintf(stderr, "  --no-ssa    ignore the sampled suffix array\n");

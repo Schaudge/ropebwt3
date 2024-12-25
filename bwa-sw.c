@@ -174,7 +174,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 
 	// get CIGAR
 	sw_backtrack1_core(opt, f, g, row, pos, hit, 1); // compute length without allocation
-	hit->rseq = opt->flag & RB3_SWF_KEEP_RS? RB3_CALLOC(uint8_t, hit->rlen) : Kcalloc(km, uint8_t, hit->rlen);
+	hit->rseq = opt->flag & RB3_SWF_KEEP_RS ? RB3_CALLOC(uint8_t, hit->rlen) : Kcalloc(km, uint8_t, hit->rlen);
 	hit->cigar = RB3_CALLOC(uint32_t, hit->n_cigar);
 	sw_backtrack1_core(opt, f, g, row, pos, hit, 0);
 	sw_cs_core(hit, qseq, 1); // this requires ::cigar and ::rseq
@@ -199,7 +199,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 		rb3_pos_t gpos;
 		rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, 1, &gpos);
 		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
-		if (opt->flag & RB3_RH_WRITE_ALL) {  // record all ref hits, add by Schaudge King!
+		if (opt->flag & RB3_SWF_MAX_HIS) {  // record all ref hits, add by Schaudge King!
 			kstring_t out = {0,0,0};
             if (hit->lo + opt->max_hc < hit->hi) {  // set taxonomy id, hit count to 0, opt->max_hc + 1 respectively for high homology read
                 hit->rhs = RB3_CALLOC(char, 2);

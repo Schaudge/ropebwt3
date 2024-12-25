@@ -6,7 +6,7 @@
 #define RB3_SWF_E2E      0x1
 #define RB3_SWF_HAPDIV   0x2
 #define RB3_SWF_KEEP_RS  0x4
-#define RB3_RH_WRITE_ALL   0x16
+#define RB3_SWF_MAX_HIS  0x8
 
 typedef struct {
 	uint32_t flag;
