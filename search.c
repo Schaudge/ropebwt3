@@ -234,9 +234,12 @@ static void write_per_seq(step_t *t)
 				}
 			} else if (p->opt->flag & RB3_MF_WRITE_UNMAP) { // unmapped
 				write_name(&out, s);
-				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0\tqs:Z:", s->len);
-                for (int32_t k = 0; k < s->len; ++k)
-                    rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0", s->len);
+                if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
+                    rb3_sprintf_lite(&out, "\tAS:i:0\tqh:i:1\trh:i:0\tcg:Z:*\tcs:Z::*\ths:Z:*,\thc:Z:*,\tqs:Z:");
+                    for (int32_t k = 0; k < s->len; ++k)
+                        rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                }
                 rb3_sprintf_lite(&out, "\n");
 				fputs(out.s, stdout);
 			}
