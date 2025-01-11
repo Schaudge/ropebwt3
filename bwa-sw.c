@@ -197,7 +197,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 	hit->pos = hit->sid = -1;
 	if (f->ssa) {
 		rb3_pos_t gpos;
-		rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, 1, &gpos);
+		rb3_ssa_multi(km, f, f->ssa, hit->hi - 1, hit->hi, 1, &gpos);
 		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
 		if (opt->flag & RB3_SWF_MAX_HIS) {  // record all ref hits, add by Schaudge King!
 			kstring_t out = {0,0,0};
