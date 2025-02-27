@@ -201,7 +201,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
 		if (opt->flag & RB3_SWF_MAX_HIS) {  // record all ref hits, add by Schaudge King!
 			kstring_t out = {0,0,0};
-            if (hit->lo + opt->max_hc < hit->hi) {  // set taxonomy id, hit count to 0, opt->max_hc + 1 respectively for high homology read
+            if (hit->lo + opt->max_hc < hit->hi) {  // set taxonomy id, hit count to 0, opt->max_hc + 1 respectively for hits beyond max_hc
                 hit->rhs = RB3_CALLOC(char, 2);
                 hit->rhs[0] = '0';
                 hit->rhc = RB3_CALLOC(uint32_t, 2);
