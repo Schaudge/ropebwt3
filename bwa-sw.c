@@ -196,45 +196,43 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
 	// get reference name/id and position for these hits in the SA interval
 	hit->pos = hit->sid = -1;
 	if (f->ssa) {
-		rb3_pos_t gpos;
-		rb3_ssa_multi(km, f, f->ssa, hit->hi - 1, hit->hi, 1, &gpos);
-		hit->pos = gpos.pos, hit->sid = gpos.sid;    // the first hit
-		if (opt->flag & RB3_SWF_MAX_HIS) {  // record all ref hits, add by Schaudge King!
-			kstring_t out = {0,0,0};
-            if (hit->lo + opt->max_hc < hit->hi) {  // set taxonomy id, hit count to 0, opt->max_hc + 1 respectively for hits beyond max_hc
-                hit->rhs = RB3_CALLOC(char, 2);
-                hit->rhs[0] = '0';
-                hit->rhc = RB3_CALLOC(uint32_t, 2);
+        // record all ref hit's id and pos upto opt->max_hc, add by Schaudge King!
+        int64_t max_sa = opt->flag & RB3_SWF_MAX_HIS ? opt->max_hc : 1;
+        rb3_pos_t * gpos;
+        gpos = RB3_MALLOC(rb3_pos_t, max_sa);
+        int64_t n_hits = rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, max_sa, gpos);
+        hit->pos = gpos[0].pos, hit->sid = gpos[0].sid;    // the first hit
+		if (opt->flag & RB3_SWF_MAX_HIS) {
+            hit->rhs = RB3_CALLOC(char, n_hits * 16 + 1);  // max accession size + one comma = 16
+            hit->rhc = RB3_CALLOC(uint32_t, n_hits + 1);
+            kstring_t out = {0,0,0};
+            out.m = n_hits * 16 + 1, out.s = hit->rhs;
+            int64_t idx = 0, space_used = 0;
+            if (hit->lo + n_hits < hit->hi) {  // set the first taxonomy id, hit count to 0, opt->max_hc + 1 respectively for hits beyond max_hc
+                space_used += rb3_sprintf_lite(&out, "%s,", "0");
                 hit->rhc[0] = opt->max_hc + 1;
-            } else {
-                int64_t max_hits = hit->hi - hit->lo;
-                hit->rhs = RB3_CALLOC(char, max_hits * 16 + 1);  // max accession size + one comma = 16
-                out.m = max_hits * 16 + 1, out.s = hit->rhs;
-                int64_t space_used = rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
-                hit->rhc = RB3_CALLOC(uint32_t, max_hits + 1);
-                hit->rhc[0] = 1;
-                int64_t idx = hit->lo;
-                for (; idx < hit->hi - 1; ++idx) {
-                    rb3_ssa_multi(km, f, f->ssa, idx, idx + 1, 1, &gpos);
-                    // the following codes are useful to trim the duplicated taxonomy id
-                    uint32_t find = 0, sid_len = strlen(f->sid->name[gpos.sid>>1]);
-                    uint32_t ii = 0, jj = 1, ci = 0;
-                    for (; find < 1 && jj < space_used; ++jj)
-                        if (*(hit->rhs + jj) == ',') {
-                            if (ii + sid_len == jj && strncmp(f->sid->name[gpos.sid>>1], hit->rhs + ii, sid_len) == 0) {
-                                hit->rhc[ci] += 1;
-                                find = 1;
-                            }
-                            ++ci;
-                            ii = ++jj;
+                idx = 1;
+            }
+            for (; idx < n_hits; ++idx) {
+                // the following codes are useful to trim the duplicated taxonomy id
+                uint32_t find = 0, sid_len = strlen(f->sid->name[gpos[idx].sid>>1]);
+                uint32_t ii = 0, jj = 1, ci = 0;
+                for (; find < 1 && jj < space_used; ++jj)
+                    if (*(hit->rhs + jj) == ',') {
+                        if (ii + sid_len == jj && strncmp(f->sid->name[gpos[idx].sid>>1], hit->rhs + ii, sid_len) == 0) {
+                            hit->rhc[ci] += 1;
+                            find = 1;
                         }
-                    if (!find) {
-                        space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos.sid>>1]);
-                        hit->rhc[ci] = 1;
+                        ++ci;
+                        ii = ++jj;
                     }
+                if (!find) {  // find == 0
+                    space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos[idx].sid>>1]);
+                    hit->rhc[ci] = 1;
                 }
             }
 		}
+        free(gpos);
 	}
 }
 

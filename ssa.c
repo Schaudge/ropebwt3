@@ -160,7 +160,7 @@ int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_
     if (max_sa == 0 || lo >= hi) return 0;
 	ssa_aux_t aux;
 	memset(&aux, 0, sizeof(aux));
-	aux.max_sa = max_sa < hi - lo? max_sa : hi - lo;
+	aux.max_sa = max_sa < hi - lo ? max_sa : hi - lo;
 	aux.m_a = 256, aux.n_a = 0;
 	aux.a = Kmalloc(km, ssa_intv_t, aux.m_a);
 	aux.km = km, aux.sa = sa, aux.n0 = f->acc[1];
