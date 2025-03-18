@@ -45,7 +45,7 @@ typedef struct {
 } rb3_hapdiv_t;
 
 void rb3_swopt_init(rb3_swopt_t *opt);
-void rb3_sw(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, int len, const uint8_t *seq, rb3_swrst_t *rst);
+void rb3_sw(void *km, rb3_sai_v *mem, const rb3_swopt_t *opt, const rb3_fmi_t *f, int len, const uint8_t *seq, rb3_swrst_t *rst);
 void rb3_hapdiv(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, int len, const uint8_t *seq, rb3_hapdiv_t *hd);
 void rb3_swrst_free(rb3_swrst_t *rst);
 

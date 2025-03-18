@@ -537,6 +537,25 @@ int32_t rb3_fmd_smem_present(const rb3_fmi_t *f, int64_t len, const uint8_t *q, 
 	return 0;
 }
 
+int32_t rb3_fmd_clear_present(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_len)
+{
+    int64_t x = 0, y = 0;
+    do {
+        x = rb3_fmd_smem1_TG(0, f, 1, min_len, len, q, x, 0, 1);
+        if (x < 0) { // min_len string match found
+            if (y < 1) { // no shift
+                rb3_fmd_smem1_TG(km, f, 1, len, len, q, 0, mem, 0);
+                if (mem->n > 0) { // perfect match no further alignment
+                    return 0;
+                } else return 1;
+            }
+            return 1;
+        }
+        ++y; // forward or backward shift flag
+    } while (x < len);
+    return 0;
+}
+
 /*******************
  * Other utilities *
  *******************/

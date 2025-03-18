@@ -572,12 +572,12 @@ static void sw_core(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, const 
  * External APIs *
  *****************/
 
-void rb3_sw(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, int len, const uint8_t *seq, rb3_swrst_t *rst)
+void rb3_sw(void *km, rb3_sai_v *mem, const rb3_swopt_t *opt, const rb3_fmi_t *f, int len, const uint8_t *seq, rb3_swrst_t *rst)
 {
 	rb3_bwtl_t *q = 0;
 	rb3_dawg_t *g;
 	if (opt->min_mem_len > 0 && opt->min_mem_len > opt->end_len) {
-		if (!rb3_fmd_smem_present(f, len, seq, opt->min_mem_len))
+		if (!rb3_fmd_clear_present(km, f, len, seq, mem, opt->min_mem_len))
 			return;
 	}
 	if (opt->flag & RB3_SWF_E2E) {

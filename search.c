@@ -89,7 +89,23 @@ static void worker_for_seq(void *data, long i, int tid)
 		fprintf(stderr, "Q\t%s\t%d\n", s->name, tid);
 	rb3_char2nt6(s->len, s->seq);
 	if (p->opt->algo == RB3_SA_SW) { // BWA-SW
-		rb3_sw(b->km, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
+        b->mem.n = 0;
+		rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
+        if (b->mem.n > 0) { // find pos upto for perfect match reads
+            s->n_mem = b->mem.n;
+            s->mem = RB3_CALLOC(m_sai_pos_t, s->n_mem);
+            for (i = 0; i < s->n_mem; ++i)
+                s->mem[i].mem = b->mem.a[i];
+            rb3_pos_t *pos;
+            pos = Kmalloc(b->km, rb3_pos_t, p->opt->swo.max_hc);
+            for (i = 0; i < s->n_mem; ++i) {
+                m_sai_pos_t *q = &s->mem[i];
+                q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->swo.max_hc, pos);
+                q->pos = RB3_MALLOC(rb3_pos_t, q->n_pos);
+                memcpy(q->pos, pos, sizeof(rb3_pos_t) * q->n_pos);
+            }
+            kfree(b->km, pos);
+        }
 	} else { // MEM algorithms
 		int32_t i;
 		b->mem.n = 0;
@@ -224,26 +240,51 @@ static void write_per_seq(step_t *t)
 		if (p->opt->algo == RB3_SA_SW && (p->opt->flag & RB3_MF_WRITE_ALL)) { // write all hits in a compact format
 			write_all_hits(&out, s, &t->rst[j]);
 			rb3_swrst_free(&t->rst[j]);
-		} else if (p->opt->algo == RB3_SA_SW) { // write PAF
-			rb3_swrst_t *r = &t->rst[j];
-			if (r->n > 0) { // mapped
-				for (i = 0; i < r->n; ++i) {
-					out.l = 0;
-					write_paf(&out, &p->fmi, &r->a[i], s);
-					fputs(out.s, stdout);
-				}
-			} else if (p->opt->flag & RB3_MF_WRITE_UNMAP) { // unmapped
-				write_name(&out, s);
-				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0", s->len);
-                if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
-                    rb3_sprintf_lite(&out, "\tAS:i:0\tqh:i:1\trh:i:0\tcg:Z:*\tcs:Z:*\ths:Z:*\thc:Z:*\tqs:Z:");
-                    for (k = 0; k < s->len; ++k)
-                        rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+		} else if (p->opt->algo == RB3_SA_SW) { // write PAF and perfect match record!
+            if (s->n_mem > 0) {
+                const rb3_fmi_t *f = &p->fmi;
+                for (i = 0; i < s->n_mem; ++i) {
+                    m_sai_pos_t *r = &s->mem[i];
+                    rb3_sai_t *q = &r->mem;
+                    int32_t st = q->info>>32, en = (int32_t)q->info;
+                    out.l = 0;
+                    write_name(&out, s);
+                    rb3_sprintf_lite(&out, "\t%d\t%d\t%ld", st, en, (long)q->size);
+                    if (r->n_pos > 0) {
+                        int32_t j;
+                        rb3_sprintf_lite(&out, "\t%ld", r->n_pos);
+                        for (j = 0; j < r->n_pos; ++j) {
+                            rb3_pos_t *t = &r->pos[j];
+                            int64_t rlen = f->sid->len[t->sid>>1], pos;
+                            pos = t->sid&1? rlen - (t->pos + (en - st)) : t->pos;
+                            rb3_sprintf_lite(&out, "\t%s:%c:%ld", f->sid->name[t->sid>>1], "+-"[t->sid&1], pos);
+                        }
+                        free(r->pos);
+                    }
+                    rb3_sprintf_lite(&out, "\n");
+                    fputs(out.s, stdout);
                 }
-                rb3_sprintf_lite(&out, "\n");
-				fputs(out.s, stdout);
-			}
-			rb3_swrst_free(r);
+            } else {
+                rb3_swrst_t *r = &t->rst[j];
+                if (r->n > 0) { // mapped
+                    for (i = 0; i < r->n; ++i) {
+                        out.l = 0;
+                        write_paf(&out, &p->fmi, &r->a[i], s);
+                        fputs(out.s, stdout);
+                    }
+                } else if (p->opt->flag & RB3_MF_WRITE_UNMAP) { // unmapped
+                    write_name(&out, s);
+                    rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0", s->len);
+                    if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
+                        rb3_sprintf_lite(&out, "\tAS:i:0\tqh:i:1\trh:i:0\tcg:Z:*\tcs:Z:*\ths:Z:*\thc:Z:*\tqs:Z:");
+                        for (k = 0; k < s->len; ++k)
+                            rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                    }
+                    rb3_sprintf_lite(&out, "\n");
+                    fputs(out.s, stdout);
+                }
+                rb3_swrst_free(r);
+            }
 		} else if (p->opt->min_gap_len > 0) { // output regions not covered by long MEMs
 			for (i = 0; i < s->n_gap; ++i) {
 				int32_t st = s->gap[i]>>32, en = (int32_t)s->gap[i];
