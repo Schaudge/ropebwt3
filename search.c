@@ -91,19 +91,16 @@ static void worker_for_seq(void *data, long i, int tid)
 	if (p->opt->algo == RB3_SA_SW) { // BWA-SW
         b->mem.n = 0;
 		rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
-        if (b->mem.n > 0) { // find pos upto for perfect match reads
+        if (b->mem.n > 0) { // find location (pos) upto opt->swo.max_hc for these perfect match reads
             s->n_mem = b->mem.n;
-            s->mem = RB3_CALLOC(m_sai_pos_t, s->n_mem);
-            for (i = 0; i < s->n_mem; ++i)
-                s->mem[i].mem = b->mem.a[i];
+            s->mem = RB3_CALLOC(m_sai_pos_t, 1);
+            s->mem[0].mem = b->mem.a[0];
             rb3_pos_t *pos;
             pos = Kmalloc(b->km, rb3_pos_t, p->opt->swo.max_hc);
-            for (i = 0; i < s->n_mem; ++i) {
-                m_sai_pos_t *q = &s->mem[i];
-                q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->swo.max_hc, pos);
-                q->pos = RB3_MALLOC(rb3_pos_t, q->n_pos);
-                memcpy(q->pos, pos, sizeof(rb3_pos_t) * q->n_pos);
-            }
+            m_sai_pos_t *q = &s->mem[0];
+            q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->swo.max_hc, pos);
+            q->pos = RB3_MALLOC(rb3_pos_t, q->n_pos);
+            memcpy(q->pos, pos, sizeof(rb3_pos_t) * q->n_pos);
             kfree(b->km, pos);
         }
 	} else { // MEM algorithms
