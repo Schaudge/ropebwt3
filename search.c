@@ -92,15 +92,47 @@ static void worker_for_seq(void *data, long i, int tid)
         b->mem.n = 0;
 		rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
         if (b->mem.n > 0) { // find location (pos) upto opt->swo.max_hc for these perfect match reads
+            int32_t max_hits_count = p->opt->swo.max_hc;
             s->n_mem = b->mem.n;
-            s->mem = RB3_CALLOC(m_sai_pos_t, 1);
+            s->mem = RB3_CALLOC(m_sai_pos_t, 1); // only one record
             s->mem[0].mem = b->mem.a[0];
             rb3_pos_t *pos;
-            pos = Kmalloc(b->km, rb3_pos_t, p->opt->swo.max_hc);
+            pos = Kmalloc(b->km, rb3_pos_t, max_hits_count);
             m_sai_pos_t *q = &s->mem[0];
-            q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->swo.max_hc, pos);
-            q->pos = RB3_MALLOC(rb3_pos_t, q->n_pos);
-            memcpy(q->pos, pos, sizeof(rb3_pos_t) * q->n_pos);
+            q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, max_hits_count, pos);
+            t->rst[i].n = 1, t->rst[i].a = RB3_CALLOC(rb3_swhit_t, 1);
+            rb3_swhit_t *hit = &t->rst[i].a[0];
+            hit->pos = pos->pos, hit->sid = pos->sid;    // the first hit
+            if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
+                hit->rhs = RB3_CALLOC(char, q->n_pos * 16 + 1);  // max accession size + one comma = 16
+                hit->rhc = RB3_CALLOC(uint32_t, q->n_pos + 1);
+                kstring_t out = {0,0,0};
+                out.m = q->n_pos * 16 + 1, out.s = hit->rhs;
+                int64_t idx = 0, space_used = 0;
+                if (q->n_pos >= max_hits_count) {  // set the first taxonomy id, hit count to 0, opt->max_hc + 1 respectively for hits beyond max_hc
+                    space_used += rb3_sprintf_lite(&out, "%s,", "0");
+                    hit->rhc[0] = p->opt->swo.max_hc + 1;
+                    idx = 1;
+                }
+                for (; idx < q->n_pos; ++idx) {
+                    // the following codes are useful to trim the duplicated taxonomy id
+                    uint32_t find = 0, sid_len = strlen(p->fmi.sid->name[pos[idx].sid>>1]);
+                    uint32_t ii = 0, jj = 1, ci = 0;
+                    for (; find < 1 && jj < space_used; ++jj)
+                        if (*(hit->rhs + jj) == ',') {
+                            if (ii + sid_len == jj && strncmp(p->fmi.sid->name[pos[idx].sid>>1], hit->rhs + ii, sid_len) == 0) {
+                                hit->rhc[ci] += 1;
+                                find = 1;
+                            }
+                            ++ci;
+                            ii = ++jj;
+                        }
+                    if (!find) {  // find == 0
+                        space_used += rb3_sprintf_lite(&out, "%s,", p->fmi.sid->name[pos[idx].sid>>1]);
+                        hit->rhc[ci] = 1;
+                    }
+                }
+            }
             kfree(b->km, pos);
         }
 	} else { // MEM algorithms
@@ -239,28 +271,23 @@ static void write_per_seq(step_t *t)
 			rb3_swrst_free(&t->rst[j]);
 		} else if (p->opt->algo == RB3_SA_SW) { // write PAF and perfect match record!
             if (s->n_mem > 0) {
-                const rb3_fmi_t *f = &p->fmi;
-                for (i = 0; i < s->n_mem; ++i) {
-                    m_sai_pos_t *r = &s->mem[i];
-                    rb3_sai_t *q = &r->mem;
-                    int32_t st = q->info>>32, en = (int32_t)q->info;
-                    out.l = 0;
-                    write_name(&out, s);
-                    rb3_sprintf_lite(&out, "\t%d\t%d\t%ld", st, en, (long)q->size);
-                    if (r->n_pos > 0) {
-                        int32_t j;
-                        rb3_sprintf_lite(&out, "\t%ld", r->n_pos);
-                        for (j = 0; j < r->n_pos; ++j) {
-                            rb3_pos_t *t = &r->pos[j];
-                            int64_t rlen = f->sid->len[t->sid>>1], pos;
-                            pos = t->sid&1? rlen - (t->pos + (en - st)) : t->pos;
-                            rb3_sprintf_lite(&out, "\t%s:%c:%ld", f->sid->name[t->sid>>1], "+-"[t->sid&1], pos);
-                        }
-                        free(r->pos);
-                    }
-                    rb3_sprintf_lite(&out, "\n");
-                    fputs(out.s, stdout);
-                }
+                m_sai_pos_t *r = &s->mem[0];
+                rb3_sai_t *q = &r->mem;
+                int32_t st = q->info >> 32, en = (int32_t)q->info;
+                out.l = 0;
+                write_name(&out, s);
+                rb3_sprintf_lite(&out, "\t%d\t%d\t%d\t?\t1\t?\t0\t%d\t0\t%d\t0\tAS:i:%d\tqh:i:1\trh:i:%ld\tcg:Z:%d=\tcs:Z:\ths:Z:%s\thc:Z:",
+                                 s->len, st, en, s->len, s->len, s->len, r->n_pos, s->len, t->rst[j].a->rhs);
+                int32_t ci = 0;
+                while (t->rst[j].a->rhc[ci] > 0)
+                    rb3_sprintf_lite(&out, "%d,", t->rst[j].a->rhc[ci++]);
+                rb3_sprintf_lite(&out, "\tqs:Z:");
+                for (k = 0; k < s->len; ++k)
+                    rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                rb3_sprintf_lite(&out, "\n");
+                free(r->pos);
+                free(t->rst[j].a->rhs); free(t->rst[j].a->rhc); free(t->rst[j].a);
+                fputs(out.s, stdout);
             } else {
                 rb3_swrst_t *r = &t->rst[j];
                 if (r->n > 0) { // mapped
