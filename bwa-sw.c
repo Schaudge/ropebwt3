@@ -587,6 +587,9 @@ void rb3_sw(void *km, rb3_sai_v *mem, const rb3_swopt_t *opt, const rb3_fmi_t *f
 		g = rb3_dawg_gen(km, q);
 	}
 	sw_core(km, opt, f, g, len, seq, rst, 0);
+    if (opt->min_mem_len > 0 && rst->n < 1) {
+        rb3_fmd_smem_TG(km, f, len, seq, mem, 1, (len >> 1) + 13);
+    }
 	rb3_dawg_destroy(km, g); // this doesn't deallocate q
 	if (q) rb3_bwtl_destroy(q);
 }

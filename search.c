@@ -277,7 +277,7 @@ static void write_per_seq(step_t *t)
                 out.l = 0;
                 write_name(&out, s);
                 rb3_sprintf_lite(&out, "\t%d\t%d\t%d\t?\t1\t?\t0\t%d\t0\t%d\t0\tAS:i:%d\tqh:i:1\trh:i:%ld\tcg:Z:%d=\tcs:Z:\ths:Z:%s\thc:Z:",
-                                 s->len, st, en, s->len, s->len, s->len, r->n_pos, s->len, t->rst[j].a->rhs);
+                                 s->len, st, en, s->len, s->len, en - st, r->n_pos, en - st, t->rst[j].a->rhs);
                 int32_t ci = 0;
                 while (t->rst[j].a->rhc[ci] > 0)
                     rb3_sprintf_lite(&out, "%d,", t->rst[j].a->rhc[ci++]);
