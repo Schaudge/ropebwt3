@@ -20,18 +20,18 @@ echo ACCTACAACACCGGTaGGCTACAACGTGG | ./ropebwt3 sw -Lm20 mtb152.fmd -
 # Retrieve R15311, the 46th genome in the collection. 90=(46-1)*2
 ./ropebwt3 get mtb152.fmd 90 > R15311.fa
 
-# Download the index of 100 human long-read assemblies (10GB in size)
-wget -O human100.fmr.gz https://zenodo.org/records/13147120/files/human100.fmr.gz?download=1
-wget -O human100.fmd.ssa https://zenodo.org/records/13147120/files/human100.fmd.ssa?download=1
-wget -O human100.fmd.len.gz https://zenodo.org/records/13147120/files/human100.fmd.len.gz?download=1
-gzip -d human100.fmr.gz
-./ropebwt3 build -i human100.fmr -do human100.fmd   # convert the static format for speed
+# Download the index of 472 human long-read assemblies (18GB download size)
+wget -O human472.fmr.gz https://zenodo.org/records/14854401/files/human472.fmr.gz
+wget -O human472.fmd.ssa.gz https://zenodo.org/records/14854401/files/human472.fmd.ssa.gz
+wget -O human472.fmd.len.gz https://zenodo.org/records/14854401/files/human472.fmd.len.gz
+gzip -d human472.fmr.gz human472.fmd.ssa.gz   # or use pigz for parallel decompression
+./ropebwt3 build -i human472.fmr -do human472.fmd   # convert to a faster format
 
 # Find C4 alleles (the query is on the exon 26 of C4A)
-echo CCAGGACCCCTGTCCAGTGTTAGACAGGAGCATGCAG | ./ropebwt3 sw -eN200 -Lm10 human100.fmd -
+echo CCAGGACCCCTGTCCAGTGTTAGACAGGAGCATGCAG | ./ropebwt3 sw -eN200 -Lm10 human472.fmd -
 
-# Get all top score alignments in Core nucleotide BLAST database (core_nt) for metagenomic sequencing
-./ropebwt3 sw -eN200 -m88 -t16 -K10m -x core_nt.fmd ***.fastq
+# Create top score alignments in Core Nucleotide BLAST database (core_nt) for metagenomic sequencing reads
+./ropebwt3 sw -eN1000 -m85 -t32 -K50m -x core_nt.fmd interleaved.fastq
 ```
 
 ## Table of Contents
@@ -237,7 +237,8 @@ int main(int argc, char *argv[]) {
 
 Ropebwt3 is described in
 
-> Li (2024) BWT construction and search at the terabase scale, [arXiv:2409.00613](https://arxiv.org/abs/2409.00613)
+> Li (2024) BWT construction and search at the terabase scale, *Bioinformatics*, **40**:btae717.
+> DOI:[10.1093/bioinformatics/btae717](https://doi.org/10.1093/bioinformatics/btae717)
 
 ## <a name="limit"></a>Limitations
 
