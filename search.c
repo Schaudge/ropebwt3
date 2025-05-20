@@ -91,7 +91,7 @@ static void worker_for_seq(void *data, long i, int tid)
 	if (p->opt->algo == RB3_SA_SW) { // BWA-SW
         b->mem.n = 0;
 		rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
-        if (b->mem.n > 0) { // find location (pos) upto opt->swo.max_hc for these perfect match reads
+        if (b->mem.n > 0) { // find location (pos) upto opt->swo.max_hc for these *** perfect match reads ***!
             int32_t max_hits_count = p->opt->swo.max_hc;
             s->n_mem = b->mem.n;
             s->mem = RB3_CALLOC(m_sai_pos_t, 1); // only one record
@@ -276,14 +276,17 @@ static void write_per_seq(step_t *t)
                 int32_t st = q->info >> 32, en = (int32_t)q->info;
                 out.l = 0;
                 write_name(&out, s);
-                rb3_sprintf_lite(&out, "\t%d\t%d\t%d\t?\t1\t?\t0\t%d\t0\t%d\t0\tAS:i:%d\tqh:i:1\trh:i:%ld\tcg:Z:%d=\tcs:Z:\ths:Z:%s\thc:Z:",
-                                 s->len, st, en, s->len, s->len, en - st, r->n_pos, en - st, t->rst[j].a->rhs);
-                int32_t ci = 0;
-                while (t->rst[j].a->rhc[ci] > 0)
-                    rb3_sprintf_lite(&out, "%d,", t->rst[j].a->rhc[ci++]);
-                rb3_sprintf_lite(&out, "\tqs:Z:");
-                for (k = 0; k < s->len; ++k)
-                    rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                rb3_sprintf_lite(&out, "\t%d\t%d\t%d\t?\t1\t?\t0\t%d\t0\t%d\t0\tAS:i:%d\tqh:i:1\trh:i:%ld\tcg:Z:%d=\tcs:Z:",
+                                 s->len, st, en, s->len, s->len, en - st, r->n_pos, s->len);
+                if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
+                    int32_t ci = 0;
+                    rb3_sprintf_lite(&out,"\ths:Z:%s\thc:Z:", t->rst[j].a->rhs);
+                    while (t->rst[j].a->rhc[ci] > 0)
+                        rb3_sprintf_lite(&out, "%d,", t->rst[j].a->rhc[ci++]);
+                    rb3_sprintf_lite(&out, "\tqs:Z:");
+                    for (k = 0; k < s->len; ++k)
+                        rb3_sprintf_lite(&out, "%c", "$ACGTN"[s->seq[k]]);
+                }
                 rb3_sprintf_lite(&out, "\n");
                 free(r->pos);
                 free(t->rst[j].a->rhs); free(t->rst[j].a->rhc); free(t->rst[j].a);
