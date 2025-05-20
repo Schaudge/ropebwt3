@@ -467,7 +467,7 @@ int64_t rb3_fmd_smem1(void *km, const rb3_fmi_t *f, int64_t min_occ, int64_t min
 	return ret;
 }
 
-int64_t rb3_fmd_smem(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_occ, int64_t min_len)
+inline int64_t rb3_fmd_smem(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_occ, int64_t min_len)
 {
 	int64_t x = 0;
 	rb3_sai_v curr = {0,0,0}, prev = {0,0,0};
@@ -480,7 +480,7 @@ int64_t rb3_fmd_smem(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q
 	return mem->n;
 }
 
-int64_t rb3_fmd_smem1_TG(void *km, const rb3_fmi_t *f, int64_t min_occ, int64_t min_len, int64_t len, const uint8_t *q, int64_t x, rb3_sai_v *mem, int32_t check_long)
+inline int64_t rb3_fmd_smem1_TG(void *km, const rb3_fmi_t *f, int64_t min_occ, int64_t min_len, int64_t len, const uint8_t *q, int64_t x, rb3_sai_v *mem, int32_t check_long)
 {
 	int64_t i, j;
 	rb3_sai_t ik, ok[6];
@@ -517,7 +517,7 @@ int64_t rb3_fmd_smem1_TG(void *km, const rb3_fmi_t *f, int64_t min_occ, int64_t 
 	return i + 1;
 }
 
-int64_t rb3_fmd_smem_TG(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_occ, int64_t min_len)
+inline int64_t rb3_fmd_smem_TG(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_occ, int64_t min_len)
 {
 	int64_t x = 0;
 	mem->n = 0;
@@ -527,7 +527,7 @@ int64_t rb3_fmd_smem_TG(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t
 	return mem->n;
 }
 
-int32_t rb3_fmd_smem_present(const rb3_fmi_t *f, int64_t len, const uint8_t *q, int64_t min_len)
+inline int32_t rb3_fmd_smem_present(const rb3_fmi_t *f, int64_t len, const uint8_t *q, int64_t min_len)
 {
 	int64_t x = 0;
 	do {
@@ -537,30 +537,20 @@ int32_t rb3_fmd_smem_present(const rb3_fmi_t *f, int64_t len, const uint8_t *q, 
 	return 0;
 }
 
-int32_t rb3_fmd_clear_present(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_len)
+inline int32_t rb3_fmd_clear_present(void *km, const rb3_fmi_t *f, int64_t len, const uint8_t *q, rb3_sai_v *mem, int64_t min_len)
 {
-    int64_t x = 0, y = 0;
-    do {
-        x = rb3_fmd_smem1_TG(0, f, 1, min_len, len, q, x, 0, 1);
-        if (x < 0) { // min_len string match found
-            if (y < 1) { // no shift
-                rb3_fmd_smem1_TG(km, f, 1, len, len, q, 0, mem, 0);
-                if (mem->n > 0) { // perfect match no further alignment
-                    return 0;
-                } else return 1;
-            }
-            return 1;
-        }
-        ++y; // forward or backward shift flag
-    } while (x < len);
-    return 0;
+    rb3_fmd_smem1_TG(km, f, 1, len, len, q, 0, mem, 0);  // perfect match, min_len == len
+    if (mem->n > 0) // perfect match no further alignment
+        return 0;
+
+    return rb3_fmd_smem_present(f, len, q, min_len);
 }
 
 /*******************
  * Other utilities *
  *******************/
 
-int64_t rb3_fmi_get_acc(const rb3_fmi_t *fmi, int64_t acc[RB3_ASIZE+1])
+inline int64_t rb3_fmi_get_acc(const rb3_fmi_t *fmi, int64_t acc[RB3_ASIZE+1])
 {
 	if (fmi->is_fmd) {
 		memcpy(acc, fmi->e->cnt, (RB3_ASIZE+1) * sizeof(int64_t));
@@ -568,7 +558,7 @@ int64_t rb3_fmi_get_acc(const rb3_fmi_t *fmi, int64_t acc[RB3_ASIZE+1])
 	} else return mr_get_ac(fmi->r, acc);
 }
 
-int64_t rb3_fmi_retrieve(const rb3_fmi_t *f, int64_t k, kstring_t *s)
+inline int64_t rb3_fmi_retrieve(const rb3_fmi_t *f, int64_t k, kstring_t *s)
 {
 	int64_t i, ok[RB3_ASIZE];
 	int c;
@@ -585,7 +575,7 @@ int64_t rb3_fmi_retrieve(const rb3_fmi_t *f, int64_t k, kstring_t *s)
 	return k;
 }
 
-int64_t rb3_fmi_get_r(const rb3_fmi_t *f)
+inline int64_t rb3_fmi_get_r(const rb3_fmi_t *f)
 {
 	int64_t l, r = 0;
 	int c, last_c = -1;
