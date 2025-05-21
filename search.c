@@ -99,7 +99,7 @@ static void worker_for_seq(void *data, long i, int tid)
             rb3_pos_t *pos;
             pos = Kmalloc(b->km, rb3_pos_t, max_hits_count);
             m_sai_pos_t *q = &s->mem[0];
-            q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, max_hits_count, pos);
+            q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, max_hits_count, pos, p->opt->swo.flag & RB3_SWF_SPEC);
             t->rst[i].n = 1, t->rst[i].a = RB3_CALLOC(rb3_swhit_t, 1);
             rb3_swhit_t *hit = &t->rst[i].a[0];
             hit->pos = pos->pos, hit->sid = pos->sid;    // the first hit
@@ -127,6 +127,7 @@ static void worker_for_seq(void *data, long i, int tid)
                             ++ci;
                             ii = ++jj;
                         }
+                    if (find & p->opt->swo.flag & RB3_SWF_SPEC & hit->rhc[ci - 1] > 50) break;
                     if (!find) {  // find == 0
                         space_used += rb3_sprintf_lite(&out, "%s,", p->fmi.sid->name[pos[idx].sid>>1]);
                         hit->rhc[ci] = 1;
@@ -169,7 +170,7 @@ static void worker_for_seq(void *data, long i, int tid)
 			pos = Kmalloc(b->km, rb3_pos_t, p->opt->max_pos);
 			for (i = 0; i < s->n_mem; ++i) {
 				m_sai_pos_t *q = &s->mem[i];
-				q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->max_pos, pos);
+				q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, p->opt->max_pos, pos, 0);
 				q->pos = RB3_MALLOC(rb3_pos_t, q->n_pos);
 				memcpy(q->pos, pos, sizeof(rb3_pos_t) * q->n_pos);
 			}
@@ -490,7 +491,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 
 	rb3_mopt_init(&opt);
 	p.opt = &opt, p.id = 0;
-	while ((c = ketopt(&o, argc, argv, 1, "Ll:c:t:K:MdN:A:B:O:E:C:m:q:k:uj:ey:a:w:p:x", long_options)) >= 0) {
+	while ((c = ketopt(&o, argc, argv, 1, "Ll:c:t:K:MdN:A:B:O:E:C:m:nq:k:uj:ey:a:w:p:x", long_options)) >= 0) {
 		if (c == 'L') is_line = 1;
 		else if (c == 'a') opt.algo = RB3_SA_HAPDIV, opt.hapdiv_k = atoi(o.arg);
 		else if (c == 'w') opt.algo = RB3_SA_HAPDIV, opt.hapdiv_w = atoi(o.arg);
@@ -508,13 +509,14 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 		else if (c == 'E') opt.swo.gap_ext = atoi(o.arg);
 		else if (c == 'C') opt.swo.r2cache_size = rb3_parse_num(o.arg);
 		else if (c == 'm') opt.swo.min_sc = atoi(o.arg);
+		else if (c == 'n') opt.swo.flag |= RB3_SWF_SPEC;
 		else if (c == 'q') opt.swo.max_hc = atoi(o.arg);
 		else if (c == 'k') opt.swo.end_len = atoi(o.arg);
 		else if (c == 'j') opt.swo.min_mem_len = atoi(o.arg);
 		else if (c == 'e') opt.swo.flag |= RB3_SWF_E2E, opt.swo.end_len = 1;
+		else if (c == 'u') opt.flag |= RB3_MF_WRITE_UNMAP;
 		else if (c == 'x') opt.swo.flag |= RB3_SWF_MAX_HIS;
 		else if (c == 'y') opt.swo.e2e_drop = atoi(o.arg);
-		else if (c == 'u') opt.flag |= RB3_MF_WRITE_UNMAP;
 		else if (c == 301) no_ssa = 1;
 		else if (c == 302) opt.swo.flag |= RB3_SWF_KEEP_RS;
 		else if (c == 303) opt.min_gap_len = rb3_parse_num(o.arg);
@@ -580,6 +582,7 @@ int main_search(int argc, char *argv[]) // "sw" and "mem" share the same CLI
 			fprintf(stderr, "  -u          write unmapped queries to PAF\n");
 			fprintf(stderr, "  -q          max output INT hits of hs/hc field with option -x [%d]\n", opt.swo.max_hc);
 			fprintf(stderr, "  -x          write max hits taxonomy id/accessions and count to hs, hc tag respectively with comma delimited\n");
+            fprintf(stderr, "  -n          exhaustive location only for specific reads by the species taxonomy id in .fmd.len.gz\n");
 			fprintf(stderr, "  --seq       write reference sequence to the rs tag\n");
 			fprintf(stderr, "  --all-e2e   write all end-to-end hits in a compact format (forcing -e)\n");
 			fprintf(stderr, "  --no-ssa    ignore the sampled suffix array\n");

@@ -200,7 +200,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
         int64_t max_sa = opt->flag & RB3_SWF_MAX_HIS ? opt->max_hc : 1;
         rb3_pos_t * gpos;
         gpos = RB3_MALLOC(rb3_pos_t, max_sa);
-        int64_t n_hits = rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, max_sa, gpos);
+        int64_t n_hits = rb3_ssa_multi(km, f, f->ssa, hit->lo, hit->hi, max_sa, gpos, opt->flag & RB3_SWF_SPEC);
         hit->pos = gpos[0].pos, hit->sid = gpos[0].sid;    // the first hit
 		if (opt->flag & RB3_SWF_MAX_HIS) {
             hit->rhs = RB3_CALLOC(char, n_hits * 16 + 1);  // max accession size + one comma = 16
@@ -226,6 +226,7 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
                         ++ci;
                         ii = ++jj;
                     }
+                if (find & opt->flag & RB3_SWF_SPEC & hit->rhc[ci - 1] > 50) break;
                 if (!find) {  // find == 0
                     space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos[idx].sid>>1]);
                     hit->rhc[ci] = 1;

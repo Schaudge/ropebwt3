@@ -75,7 +75,7 @@ int32_t rb3_fmd_clear_present(void *km, const rb3_fmi_t *f, int64_t len, const u
 int32_t rb3_fmd_smem_present(const rb3_fmi_t *f, int64_t len, const uint8_t *q, int64_t min_len);
 
 int64_t rb3_ssa(const rb3_fmi_t *f, const rb3_ssa_t *sa, int64_t k, int64_t *si);
-int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_t lo, int64_t hi, int64_t max_sa, rb3_pos_t *sa);
+int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_t lo, int64_t hi, int64_t max_sa, rb3_pos_t *sa, uint32_t dup_break);
 void rb3_ssa_destroy(rb3_ssa_t *sa);
 int rb3_ssa_dump(const rb3_ssa_t *sa, const char *fn);
 rb3_ssa_t *rb3_ssa_restore(const char *fn);

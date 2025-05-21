@@ -155,9 +155,10 @@ static int32_t ssa_add_intv(const rb3_ssa_t *ssa, ssa_aux_t *aux, int64_t lo, in
 	return 0;
 }
 
-int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_t lo, int64_t hi, int64_t max_sa, rb3_pos_t *sa)
+int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_t lo, int64_t hi, int64_t max_sa, rb3_pos_t *sa, uint32_t dup_break)
 {
     if (max_sa == 0 || lo >= hi) return 0;
+    char* tid = "00";
 	ssa_aux_t aux;
 	memset(&aux, 0, sizeof(aux));
 	aux.max_sa = max_sa < hi - lo ? max_sa : hi - lo;
@@ -166,9 +167,9 @@ int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_
 	aux.km = km, aux.sa = sa, aux.n0 = f->acc[1];
 	ssa_add_intv(ssa, &aux, lo, hi, 0);
     int64_t ok[RB3_ASIZE], ol[RB3_ASIZE];
+    int64_t l;
+    int32_t c;
 	while (aux.n_a > 0 && aux.n_sa < aux.max_sa) {
-		int64_t l;
-		int32_t c;
 		ssa_intv_t x = aux.a[0];
 		--aux.n_a;
 		if (aux.n_a > 0) { // maintain heap
@@ -181,6 +182,12 @@ int64_t rb3_ssa_multi(void *km, const rb3_fmi_t *f, const rb3_ssa_t *ssa, int64_
 			aux.sa[aux.n_sa].pos = x.off;
 			aux.n_sa++;
 			if (aux.n_sa == aux.max_sa) goto end_ssa_multi;
+            if (dup_break) {
+                if (strcmp(tid, "00") == 0)
+                    tid = f->sid->name[ssa->r2i[l] >> 1];
+                else if (strcmp(tid, f->sid->name[ssa->r2i[l] >> 1]) != 0)
+                    goto end_ssa_multi;
+            }
 		}
 		for (c = 1; c < RB3_ASIZE; ++c)
 			if (ok[c] < ol[c])
