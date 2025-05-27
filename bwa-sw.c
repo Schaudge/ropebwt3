@@ -226,7 +226,6 @@ static void sw_backtrack1(void *km, const rb3_swopt_t *opt, const rb3_fmi_t *f, 
                         ++ci;
                         ii = ++jj;
                     }
-                if (find & opt->flag & RB3_SWF_SPEC & hit->rhc[ci - 1] > 50) break;
                 if (!find) {  // find == 0
                     space_used += rb3_sprintf_lite(&out, "%s,", f->sid->name[gpos[idx].sid>>1]);
                     hit->rhc[ci] = 1;

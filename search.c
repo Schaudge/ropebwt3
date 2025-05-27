@@ -127,7 +127,6 @@ static void worker_for_seq(void *data, long i, int tid)
                             ++ci;
                             ii = ++jj;
                         }
-                    if (find & p->opt->swo.flag & RB3_SWF_SPEC & hit->rhc[ci - 1] > 50) break;
                     if (!find) {  // find == 0
                         space_used += rb3_sprintf_lite(&out, "%s,", p->fmi.sid->name[pos[idx].sid>>1]);
                         hit->rhc[ci] = 1;
@@ -278,7 +277,7 @@ static void write_per_seq(step_t *t)
                 out.l = 0;
                 write_name(&out, s);
                 rb3_sprintf_lite(&out, "\t%d\t%d\t%d\t?\t1\t?\t0\t%d\t0\t%d\t0\tAS:i:%d\tqh:i:1\trh:i:%ld\tcg:Z:%d=\tcs:Z:",
-                                 s->len, st, en, s->len, s->len, en - st, r->n_pos, s->len);
+                                 s->len, st, en, s->len, s->len, en - st, r->mem.size, s->len);
                 if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
                     int32_t ci = 0;
                     rb3_sprintf_lite(&out,"\ths:Z:%s\thc:Z:", t->rst[j].a->rhs);
