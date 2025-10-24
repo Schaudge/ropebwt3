@@ -94,7 +94,7 @@ static void worker_for_seq(void *data, long i, int tid)
 		rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst[i]);
 		if (t->rst_rev) {
 			rb3_revcomp6(s->len, s->seq);
-			rb3_sw(b->km, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst_rev[i]);
+			rb3_sw(b->km, &b->mem, &p->opt->swo, &p->fmi, s->len, s->seq, &t->rst_rev[i]);
 			rb3_revcomp6(s->len, s->seq);
 		}
         if (b->mem.n > 0) { // find location (pos) upto opt->swo.max_hc for these *** perfect match reads ***!
@@ -108,7 +108,6 @@ static void worker_for_seq(void *data, long i, int tid)
             q->n_pos = rb3_ssa_multi(b->km, &p->fmi, p->fmi.ssa, q->mem.x[0], q->mem.x[0] + q->mem.size, max_hits_count, pos, p->opt->swo.flag & RB3_SWF_SPEC);
             t->rst[i].n = 1, t->rst[i].a = RB3_CALLOC(rb3_swhit_t, 1);
             rb3_swhit_t *hit = &t->rst[i].a[0];
-            hit->pos = pos->pos, hit->sid = pos->sid;    // the first hit
             if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
                 hit->rhs = RB3_CALLOC(char, q->n_pos * 16 + 1);  // max accession size + one comma = 16
                 hit->rhc = RB3_CALLOC(uint32_t, q->n_pos + 1);
@@ -340,7 +339,7 @@ static void write_per_seq(step_t *t)
 				}
 			} else if (p->opt->flag & RB3_MF_WRITE_UNMAP) { // unmapped
 				write_name(&out, s);
-				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0\n", s->len);
+				rb3_sprintf_lite(&out, "\t%d\t*\t*\t*\t*\t*\t*\t*\t0\t0\t0", s->len);
                     if (p->opt->swo.flag & RB3_SWF_MAX_HIS) {
                         rb3_sprintf_lite(&out, "\tAS:i:0\tqh:i:1\trh:i:0\tcg:Z:*\tcs:Z:*\ths:Z:*\thc:Z:*\tqs:Z:");
                         for (k = 0; k < s->len; ++k)
